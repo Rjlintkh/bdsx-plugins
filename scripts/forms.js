@@ -1,3 +1,12 @@
+/*
+ *  ____                     ____  __   _
+ * |  _ \  _ __   ___  _   _|_  _|/ / _|_|
+ * | |_) /| '_ \ / _ \| | | | | |/ /_| | |
+ * |  __/ | | | |  __/| |_| |_| |____  | |
+ * |_|    |_| |_|\___|\___._|___|    |_|_|
+ *
+ * Made by PneuJai 
+ */
 
 var { netevent, createPacket, sendPacket, PacketId } = require("bdsx");
 
@@ -140,6 +149,8 @@ netevent.raw(PacketId.ModalFormResponse).on((ptr, size, networkIdentifier) => {
     ptr.move(1);
     data.formId = ptr.readVarUint();
     data.formData = ptr.readVarString();
-    formHandlers[data.formId](data, networkIdentifier);
-    delete formHandler[formId];
+    if (formHandlers[data.formId]) {
+        formHandlers[data.formId](data, networkIdentifier);
+        delete formHandler[formId];
+    }
 });
