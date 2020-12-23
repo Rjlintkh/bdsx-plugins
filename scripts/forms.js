@@ -123,7 +123,7 @@ exports.CustomForm = CustomForm;
 const formHandlers = {};
 
 function sendForm(networkIdentifier, form, handler = () => {}) {
-    let formId = parseInt(new Date().getTime() / 1000);
+    let formId = Math.floor(Math.random() * 2147483647) + 1;
     let packet = createPacket(PacketId.ModalFormRequest);
     packet.setUint32(formId, 0x28);
     packet.setCxxString(JSON.stringify(form), 0x30);
