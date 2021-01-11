@@ -151,6 +151,6 @@ netevent.raw(PacketId.ModalFormResponse).on((ptr, size, networkIdentifier) => {
     data.formData = ptr.readVarString();
     if (formHandlers[data.formId]) {
         formHandlers[data.formId](data, networkIdentifier);
-        delete formHandlers[formId];
+        delete formHandlers[data.formId];
     }
 });
