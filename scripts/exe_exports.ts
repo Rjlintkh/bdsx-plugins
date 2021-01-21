@@ -97,6 +97,38 @@ export enum PlayMode {
     ExitLivingRoom = 8,
 }
 
+export enum ActorDamageSource {
+	Override = 0x0,
+	Contact = 0x1,
+	EntityAttack = 0x2,
+	Projectile = 0x3,
+	Suffocation = 0x4,
+	Fall = 0x5,
+	Fire = 0x6,
+	FireTick = 0x7,
+	Lava = 0x8,
+	Drowning = 0x9,
+	BlockExplosion = 0x0A,
+	EntityExplosion = 0x0B,
+	Void = 0x0C,
+	Suicide = 0x0D,
+	Magic = 0x0E,
+	Wither = 0x0F,
+	Starve = 0x10,
+	Anvil = 0x11,
+	Thorns = 0x12,
+	FallingBlock = 0x13,
+	Piston = 0x14,
+	FlyIntoWall = 0x15,
+	Magma = 0x16,
+	Fireworks = 0x17,
+	Lightning = 0x18,
+	Charging = 0x19,
+	Temperature = 0x1A,
+	All = 0x1F,
+	None = -0x01,
+};
+
 export enum PlayerMovementType {
     Legacy = 0,
     ServerAuthoritativeV1 = 1,
@@ -200,6 +232,7 @@ export const procRVA = {
     "ServerLevel::setCommandsEnabled": new RVA(0xCCD2E0),
     "ServerLevel::setDifficulty": new RVA(0xCCDF20),
     "ServerNetworkHandler::_displayGameMessage": new RVA(0xB7A960),
+    "ServerNetworkHandler::allowIncomingConnections": new RVA(0xB8B800),
     "ServerNetworkHandler::updateServerAnnouncement": new RVA(0xB8B9E0),
     "ServerPlayer::changeDimension": new RVA(0xCD3FF0),
     "ServerPlayer::changeDimensionWithCredits": new RVA(0xCD40F0),
@@ -235,6 +268,7 @@ export const procFunc = {
     "ServerLevel::setCommandsEnabled": makefunc.js(procRVA["ServerLevel::setCommandsEnabled"], RawTypeId.Void, null, Level, RawTypeId.Boolean),
     "ServerLevel::setDifficulty": makefunc.js(procRVA["ServerLevel::setDifficulty"], RawTypeId.Void, null, Level, RawTypeId.Int32),
     "ServerNetworkHandler::_displayGameMessage": makefunc.js(procRVA["ServerNetworkHandler::_displayGameMessage"], RawTypeId.Void, null, ServerNetworkHandler, Actor, CxxStringStructure),
+    "ServerNetworkHandler::allowIncomingConnections": makefunc.js(procRVA["ServerNetworkHandler::allowIncomingConnections"], RawTypeId.Void, null, ServerNetworkHandler, CxxStringStructure, RawTypeId.Boolean),
     "ServerNetworkHandler::updateServerAnnouncement": makefunc.js(procRVA["ServerNetworkHandler::updateServerAnnouncement"], RawTypeId.Void, null, ServerNetworkHandler),
     "ServerPlayer::changeDimension": makefunc.js(procRVA["ServerPlayer::changeDimension"], RawTypeId.Void, null, Actor, RawTypeId.Int32, RawTypeId.Boolean), // working
     "ServerPlayer::changeDimensionWithCredits": makefunc.js(procRVA["ServerPlayer::changeDimensionWithCredits"], RawTypeId.Void, null, Actor, RawTypeId.Int32, RawTypeId.Boolean),
@@ -305,6 +339,13 @@ export const wrappedFunc = {
     },
     "ServerLevel::setDifficulty": (instance: Level, difficulty: Difficulty): void => { // not tested
         procFunc["ServerLevel::setDifficulty"](instance, difficulty);
+    },
+    "ServerNetworkHandler::allowIncomingConnections": (instance: ServerNetworkHandler, motd: string, isShown: boolean): void => { // working
+        let b = new CxxStringStructure(true);
+        b[NativeType.ctor]();
+        b.value = motd;
+        procFunc["ServerNetworkHandler::allowIncomingConnections"](instance, b, isShown);
+        b[NativeType.dtor]();
     },
     "ServerPlayer::changeDimension": (instance: Actor, dimension: DimensionId, respawn: boolean): void => { // working
         procFunc["ServerPlayer::changeDimension"](instance, dimension, respawn);
