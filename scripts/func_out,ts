@@ -34,11 +34,11 @@ export function hook(target: StaticPointer, handler: VoidPointer, dummy_for_back
 
 /* example
 hook(new RVA(proc["?onPlayerJoined@ServerScoreboard@@UEAAXAEBVPlayer@@@Z"]),
-    makefunc.np((serverScoreboard: VoidPointer, reghandler: VoidPointer) => {
+    makefunc.np((serverScoreboard: VoidPointer) => {
         console.log(serverScoreboard);
         console.log("a player joined, i think");
     },
-RawTypeId.Void, null, VoidPointer, VoidPointer));
+RawTypeId.Void, null, VoidPointer));
 */
 
 if (!existsSync("./pdb_symbols.json")) {
