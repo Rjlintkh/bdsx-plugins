@@ -1,14 +1,18 @@
 import { Actor, DimensionId, NativeModule, NetworkIdentifier, RawTypeId, serverControl } from "bdsx";
+import { asm, Register, X64Assembler } from "bdsx/assembler";
 import { Vec3 } from "bdsx/bds/blockpos";
 import { Level } from "bdsx/bds/level";
 import { NetworkHandler, ServerNetworkHandler } from "bdsx/bds/networkidentifier";
 import { RaknetNetworkPeer } from "bdsx/bds/peer";
 import { ServerInstance } from "bdsx/bds/server";
-import { makefunc, NativePointer, pdb } from "bdsx/core";
+import { AllocatedPointer, makefunc, NativePointer, pdb, VoidPointer } from "bdsx/core";
+import { disasm } from "bdsx/disassembler";
+import { exehacker } from "bdsx/exehacker";
+import { StaticPointer } from "bdsx/native";
 import { NativeType } from "bdsx/nativetype";
-import { CxxStringStructure } from "bdsx/pointer";
+import { CxxStringStructure, Pointer } from "bdsx/pointer";
+import { MemoryUnlocker } from "bdsx/unlocker";
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { Server } from "http";
 
 let base = NativeModule.get(null).add(0);
 
@@ -19,6 +23,23 @@ export class RVA extends NativePointer {
         this.setAddress(ptr.getAddressLow(), ptr.getAddressHigh());
     }
 }
+
+// Wrapped from exehacker.hooking
+export function hook(target: StaticPointer, handler: VoidPointer, dummy_for_backward_compatible?: any, dummy2?: any): void {
+    const code = disasm.process(target, 12);
+    const unlock = new MemoryUnlocker(target, code.size);
+    X64Assembler.hook(target, handler, code.size);
+    unlock.done();
+}
+
+/* example
+hook(new RVA(proc["?onPlayerJoined@ServerScoreboard@@UEAAXAEBVPlayer@@@Z"]),
+    makefunc.np((serverScoreboard: VoidPointer, reghandler: VoidPointer) => {
+        console.log(serverScoreboard);
+        console.log("a player joined, i think");
+    },
+RawTypeId.Void, null, VoidPointer, VoidPointer));
+*/
 
 if (!existsSync("./pdb_symbols.json")) {
     console.log("PDB Symbols not found, exporting...");
