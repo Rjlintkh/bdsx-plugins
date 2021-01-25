@@ -1,8 +1,8 @@
 import { serverInstance } from "bdsx/";
-import { wrappedFunc } from "./exe_exports";
+import { wrappedFunc } from "./idkwhattocallthisanysuggestion";
 
 export function setMotd(motd: string) {
-    wrappedFunc["ServerNetworkHandler::allowIncomingConnections"](serverInstance.minecraft.something.shandler, motd, true);
+    pdbFunc["ServerNetworkHandler::allowIncomingConnections"](serverInstance.minecraft.something.shandler, motd, true);
 }
 
 /* example
