@@ -1,7 +1,7 @@
 import { NetworkHandler, NetworkIdentifier, ServerNetworkHandler } from "bdsx/bds/networkidentifier";
 import { BossEventPacket, TransferPacket } from "bdsx/bds/packets";
 import { SYMOPT_UNDNAME } from "bdsx/common";
-import { pdb } from "bdsx/core";
+import { pdb, StaticPointer } from "bdsx/core";
 import { Actor, DimensionId } from "bdsx";
 import { float64_t, int32_t, NativeType } from "bdsx/nativetype";
 import { CxxStringWrapper } from "bdsx/pointer";
@@ -20,74 +20,21 @@ import { remapAndPrintError } from "bdsx/source-map-support";
 
 pdb.setOptions(SYMOPT_UNDNAME);
 const procHacker = ProcHacker.load("../pdbcache.ini", [
+    "Abilities::setPlayerPermissions",
     "Actor::getNameTag",
-    "Level::addPlayer",
-    "NetworkHandler::getPeerForUser",
-    "Player::attack",
-    "RakNet::RakPeer::GetLastPing",
+    "Actor::getPos",
+    //"NetworkHandler::getPeerForUser",
+    //"RakNet::RakPeer::GetLastPing",
     "RakNetInstance::getPort",
-    "RakNetInstance::RakNetNetworkPeer::getNetworkStatus",
-    "ServerScoreboard::onPlayerJoined",
+    //"RakNetInstance::RakNetNetworkPeer::getNetworkStatus",
     "ServerInstance::disconnectAllClientsWithMessage",
-    "ServerNetworkHandler::_onPlayerLeft",
     "ServerNetworkHandler::allowIncomingConnections",
     "ServerNetworkHandler::disconnectClient",
-    "TeleportCommand::teleport",
+    "ServerPlayer::setPermissions",
+    //"TeleportCommand::teleport",
 ]);
 pdb.setOptions(0);
 pdb.close();
-
-export enum Events {
-    PlayerAttack = "PlayerAttack",
-    PlayerJoin = "PlayerJoin",
-    PlayerLeave = "PlayerLeave",
-}
-const eventListeners: {[key: string]: CallableFunction[]} = {};
-
-export function addEventListener(event: Events, handler: CallableFunction) {
-    if (!eventListeners[event]) {
-        eventListeners[event] = [];
-    }
-    eventListeners[event].push(handler);
-}
-
-function onPlayerAttack(player: Player, target: Actor): boolean {
-    try {
-        for (let handler of eventListeners[Events.PlayerAttack]) {
-            if (handler(player, target) === false) return false;
-        }
-    } catch (err) {
-        remapAndPrintError(err);
-    }
-    return _onPlayerAttack(player, target);
-}
-let _onPlayerAttack = procHacker.hooking("Player::attack", RawTypeId.Boolean, null, Player, Actor)(onPlayerAttack);
-
-/*
-function onPlayerJoin(serverScoreboard: VoidPointer, player: Player): boolean {
-    try {
-        for (let handler of eventListeners[Events.PlayerJoin]) {
-            if (handler(player) === false) return false;
-        }
-    } catch (err) {
-        remapAndPrintError(err);
-    }
-    return _onPlayerJoin(serverScoreboard, player);
-}
-let _onPlayerJoin = procHacker.hooking("ServerScoreboard::onPlayerJoined", RawTypeId.Boolean, null, VoidPointer, Player)(onPlayerJoin);
-*/
-
-function onPlayerLeave(serverNetworkHandler: ServerNetworkHandler, player: ServerPlayer): boolean {
-    try {
-        for (let handler of eventListeners[Events.PlayerLeave]) {
-            if (handler(player) === false) return false;
-        }
-    } catch (err) {
-        remapAndPrintError(err);
-    }
-    return _onPlayerLeave(serverNetworkHandler, player);
-}
-let _onPlayerLeave = procHacker.hooking("ServerNetworkHandler::_onPlayerLeft", RawTypeId.Boolean, null, ServerNetworkHandler, ServerPlayer)(onPlayerLeave);
 
 export function setBossBar(player: Actor, title: string, healthPercent: number): void {
     let pk = BossEventPacket.create();
@@ -126,8 +73,8 @@ export function transferServer(player: Actor, address: string, port: number = 19
     pk.dispose();
 }
 
+/*
 let _teleport = procHacker.js("TeleportCommand::teleport", RawTypeId.Void, null, Actor, Vec3, RawTypeId.Int32, RawTypeId.Int32, RawTypeId.Float, RawTypeId.Float, RawTypeId.Int32, RawTypeId.Int32);
-/** @deprecated Will crash server */
 export function teleport(actor: Actor, target: {x: number, y: number, z: number}, dimension: DimensionId = 0): void {
     let _target = new Vec3();
     _target.x = target.x;
@@ -135,9 +82,10 @@ export function teleport(actor: Actor, target: {x: number, y: number, z: number}
     _target.z = target.z;
     _teleport(actor, _target, 0, dimension, 0, 0, 0, -1);
 }
+*/
 
 let _getPort = procHacker.js("RakNetInstance::getPort", RawTypeId.Int32, null, RakNetInstance);
-export function getPort() {
+export function getPort(): number {
     return _getPort(serverInstance.minecraft.something.network.instance);
 }
 
@@ -151,19 +99,19 @@ export class NetworkStatus extends NativeClass {
 }
 let _getPeerForUser = procHacker.js("NetworkHandler::getPeerForUser", RaknetNetworkPeer, null, NetworkHandler, NetworkIdentifier);
 let _getNetworkStatus = procHacker.js("RakNetInstance::RakNetNetworkPeer::getNetworkStatus", NetworkStatus, null, RaknetNetworkPeer);
-export function getNetworkStatus(networkIdentifier: NetworkIdentifier) {
+export function getNetworkStatus(networkIdentifier: NetworkIdentifier): NetworkStatus {
     return _getNetworkStatus(_getPeerForUser(serverInstance.minecraft.something.network, networkIdentifier));
 }
 
 let _getLastPing = procHacker.js("RakNet::RakPeer::GetLastPing", RawTypeId.Int32, null, RakNet.RakPeer, RakNet.AddressOrGUID);
-export function getLastPing(networkIdentifier: NetworkIdentifier) {
+export function getLastPing(networkIdentifier: NetworkIdentifier): RaknetNetworkPeer {
     let peer = _getPeerForUser(serverInstance.minecraft.something.network, networkIdentifier);
     return _getLastPing(peer.peer, peer.addr);
 }
 */
 
 let _disconnectClient = procHacker.js("ServerNetworkHandler::disconnectClient", RawTypeId.Void, null, ServerNetworkHandler, NetworkIdentifier, RawTypeId.Int32, CxxStringWrapper, RawTypeId.Int32);
-export function disconnectClient(networkIdentifier: NetworkIdentifier, message: string = "disconnectionScreen.disconnected") {
+export function disconnectClient(networkIdentifier: NetworkIdentifier, message: string = "disconnectionScreen.disconnected"): void {
     let _message = new CxxStringWrapper(true);
     _message[NativeType.ctor]();
     _message.value = message;
@@ -172,7 +120,7 @@ export function disconnectClient(networkIdentifier: NetworkIdentifier, message: 
 }
 
 let _disonnectAllClients = procHacker.js("ServerInstance::disconnectAllClientsWithMessage", RawTypeId.Void, null, ServerInstance, CxxStringWrapper);
-export function disconnectAllClients(message: string = "disconnectionScreen.disconnected") {
+export function disconnectAllClients(message: string = "disconnectionScreen.disconnected"): void {
     let _message = new CxxStringWrapper(true);
     _message[NativeType.ctor]();
     _message.value = message;
@@ -183,4 +131,16 @@ export function disconnectAllClients(message: string = "disconnectionScreen.disc
 let _getActorName = procHacker.js("Actor::getNameTag", CxxStringWrapper, null, Actor);
 export function getActorName(actor: Actor): string {
     return _getActorName(actor).value;
+}
+
+let _getActorPos = procHacker.js("Actor::getPos", Vec3, null, Actor);
+export function getActorPosition(actor: Actor): {x: number, y: number, z: number} {
+    let {x, y, z} = _getActorPos(actor)
+    return {x, y, z};
+}
+
+//let _setPlayerPermissions = procHacker.js("ServerPlayer::setPermissions", RawTypeId.Void, null, ServerPlayer, RawTypeId.Int32);
+let _setPlayerPermissions = procHacker.js("Abilities::setPlayerPermissions", RawTypeId.Void, null, VoidPointer, RawTypeId.Int32);
+export function setPlayerPermissions(player: Player, permissionLevel: number): void {
+    _setPlayerPermissions((player as unknown as StaticPointer).getPointer(0x8A8), permissionLevel);
 }
