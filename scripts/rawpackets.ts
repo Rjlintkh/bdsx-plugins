@@ -1,5 +1,26 @@
 import { RawPacket } from "bdsx/rawpacket";
-import { NativePointer, netevent, PacketId } from "./bdsx";
+import { NativePointer, PacketId } from "./bdsx";
+
+export class PlayStatusPacket {
+	static LoginSuccess = 0;
+	static LoginFailedClient = 1;
+	static LoginFailedServer = 2;
+	static PlayerSpawn = 3;
+	static LoginFailedInvalidTenent = 4;
+	static LoginFailedVanillaEDU = 5;
+	static LoginFailedEDUVanilla = 6;
+	static LoginFailedServerFull = 7;
+    status: number;
+    read(ptr: NativePointer) {
+        ptr.move(1);
+        this.status = ptr.readInt32();
+    }
+    write(): RawPacket {
+        let pk = new RawPacket(PacketId.PlayStatus);
+        pk.writeInt32(this.status);
+        return pk;
+    }
+}
 
 export class TextPacket {
     static TypeRaw = 0;
