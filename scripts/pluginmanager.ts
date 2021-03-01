@@ -4,6 +4,8 @@ import * as colors from "colors";
 import { stderr } from "process";
 import { serverControl } from "./bdsx";
 
+let reloadNeeded = false;
+
 if (!fs.existsSync("./plugins")) {
     fs.mkdirSync("./plugins");
     console.log("[BDSX] Initializing plugin manager...");
@@ -11,11 +13,12 @@ if (!fs.existsSync("./plugins")) {
 
 if (!fs.existsSync("./plugins/plugins.json")) {
     fs.writeFileSync("./plugins/plugins.json", `{}`);
+    fs.writeFileSync("./plugins/loader.ts", "");
+    reloadNeeded = true;
 }
 console.log("[BDSX] Checking for plugins...");
 
 let plugins = JSON.parse(fs.readFileSync("./plugins/plugins.json", "utf8"));
-let reloadNeeded = false;
 
 for (let f of fs.readdirSync("./plugins")) {
     let stats = fs.statSync(`./plugins/${f}`);
@@ -37,6 +40,14 @@ for (let f of fs.readdirSync("./plugins")) {
     }
 }
 
+for (let k in plugins) {
+    if (!fs.existsSync(`./plugins/${plugins[k].main}`)) {
+        console.log(`[BDSX] Plugin ${plugins[k].name} v${plugins[k].version.join(".")} has been deleted.`);
+        delete plugins[k];
+        reloadNeeded = true;
+    }
+}
+
 if (reloadNeeded) {
     fs.writeFileSync("./plugins/plugins.json", JSON.stringify(plugins));
     let loader = "";
@@ -47,10 +58,8 @@ if (reloadNeeded) {
         loader += `require("./${plugin.main}");`;
     }
     fs.writeFileSync("./plugins/loader.ts", loader);
-    console.log("[BDSX] Plugins built, please restart");
-    childProcess.exec(`cd "${process.cwd()}/../" & npm build`, (err, stdout, stderr) => {
-        serverControl.restart(true);
-    })
+    let builder = childProcess.spawn("cmd.exe", ["/c", `cd "${process.cwd()}/../" & npm run-script build`], { detached: false });
+    console.log(colors.red("[BDSX] Plugins bundled, please restart."));
 } else {
     require("./bedrock_server/plugins/loader");
 }
